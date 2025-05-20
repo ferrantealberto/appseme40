@@ -15,14 +15,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showFreeOnly, setShowFreeOnly] = useState(false);
+  // Rimosso lo stato showFreeOnly perché ora vengono caricati solo modelli gratuiti
 
   useEffect(() => {
     const getModels = async () => {
       try {
         setIsLoading(true);
         const apiModels = await fetchModels();
-        
+
         const transformedModels: AIModel[] = apiModels.map((model: any) => ({
           id: model.id,
           name: model.name,
@@ -32,9 +32,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onClose }) => {
           capabilities: model.capabilities || ['Generazione di testo'],
           free: model.pricing?.hourly === 0 || false
         }));
-        
-        setModels(transformedModels);
-        setFilteredModels(transformedModels);
+
+        // Filtra solo i modelli gratuiti
+        const freeModels = transformedModels.filter(model => model.free);
+
+        setModels(freeModels);
+        setFilteredModels(freeModels);
       } catch (err) {
         setError('Impossibile caricare i modelli AI. Riprova più tardi.');
         console.error('Errore nel caricamento dei modelli:', err);
@@ -48,20 +51,17 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onClose }) => {
 
   useEffect(() => {
     let result = models;
-    
+
     if (searchQuery) {
-      result = models.filter(model => 
-        (model.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      result = models.filter(model =>
+        (model.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (model.provider || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
-    if (showFreeOnly) {
-      result = result.filter(model => model.free);
-    }
-    
+
+    // Non occorre filtrare per modelli gratuiti: freeModels contiene già solo gratuiti
     setFilteredModels(result);
-  }, [searchQuery, showFreeOnly, models]);
+  }, [searchQuery, models]);
 
   const handleSelectModel = (model: AIModel) => {
     setSelectedModel(model);
@@ -94,16 +94,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onClose }) => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
-          <div className="mt-2 flex items-center">
-            <input
-              type="checkbox"
-              id="free-only"
-              checked={showFreeOnly}
-              onChange={() => setShowFreeOnly(!showFreeOnly)}
-              className="mr-2"
-            />
-            <label htmlFor="free-only" className="text-sm dark:text-gray-300">Mostra solo modelli gratuiti</label>
           </div>
         </div>
 
